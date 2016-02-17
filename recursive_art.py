@@ -1,6 +1,7 @@
 """ TODO: Put your header comment here """
 
 import random
+from math import pi, sin, cos
 from PIL import Image
 
 
@@ -14,9 +15,47 @@ def build_random_function(min_depth, max_depth):
         returns: the randomly generated function represented as a nested list
                  (see assignment writeup for details on the representation of
                  these functions)
+
+        Returns a nested list representation of a nested function call by using
+        recursion and a pseudo-random number generator to pick the function.
     """
-    # TODO: implement this
-    pass
+    depth = random.randint(min_depth, max_depth)
+    return _build_random_function(depth)
+
+def _build_random_function(depth):
+    """ A helper function for build_random_function above. Uses a pseudo-random number
+        to pick which function comprehension to add to the nested list.
+
+        Functions to choose from:
+        prod(a, b) = ab
+        avg(a,b) = 0.5*(a+b)
+        cos_pi(a) = cos(pi*a)
+        sin_pi(a) = sin(pi*a)
+        mod_sum(a, b) = -1 + (a + b) % 2 -- sums A and B % 2, places in range [-1, 1]
+        quot(a, b) = a/b -- divides A by B
+    """
+    # End case: picks either x or y to return if depth == 1
+    if depth == 1:
+        c = random.choice([0, 1])
+        if c == 0:
+            return ["x"]
+        else:
+            return ["y"]
+    else:
+    #otherwise pick another function to add into the nested list
+        psrn = random.randrange(6)
+        if psrn == 0:
+            return ["prod", _build_random_function(depth-1), _build_random_function(depth-1)]
+        elif psrn == 1:
+            return ["avg", _build_random_function(depth-1), _build_random_function(depth-1)]
+        elif psrn == 2:
+            return ["cos_pi", _build_random_function(depth-1)]
+        elif psrn == 3:
+            return ["sin_pi", _build_random_function(depth-1)]
+        elif psrn == 4:
+            return ["sum", _build_random_function(depth-1), _build_random_function(depth-1)]
+        else: #psrn == 5
+            return ["pow", _build_random_function(depth-1), _build_random_function(depth-1)]
 
 
 def evaluate_random_function(f, x, y):
@@ -32,10 +71,43 @@ def evaluate_random_function(f, x, y):
         -0.5
         >>> evaluate_random_function(["y"],0.1,0.02)
         0.02
-    """
-    # TODO: implement this
-    pass
+        >>> evaluate_random_function(["prod",["x"],["y"]],0.5,0.1)
+        0.05
+        >>> evaluate_random_function(["avg",["x"],["y"]],0.6,0.4)
+        0.5
+        >>> evaluate_random_function(["sin_pi",["x"]],0.5,0.1)
+        1.0
 
+        ***Rounding errors make this not work
+         > evaluate_random_function(["cos_pi",["x"]],0.5,0.1)
+        0.0
+
+        This next one is weird. It takes the absolute value of the sum and
+        centers it around zero.
+
+        >>> evaluate_random_function(["sum",["x"],["y"]],0.5,0.5)
+        0.0
+
+        This one also centers around zero, which is odd but it works
+        >>> evaluate_random_function(["pow",["x"],["y"]],1,0.5)
+        0.0
+    """
+    if f[0] == "prod":
+        return evaluate_random_function(f[1], x, y) * evaluate_random_function(f[2], x, y)
+    if f[0] == "avg":
+        return 0.5 * (evaluate_random_function(f[1], x, y) + evaluate_random_function(f[2], x, y))
+    if f[0] == "cos_pi":
+        return cos(pi * evaluate_random_function(f[1], x, y))
+    if f[0] == "sin_pi":
+        return sin(pi * evaluate_random_function(f[1], x, y))
+    if f[0] == "sum":
+        return -1 + abs(evaluate_random_function(f[1], x, y) + evaluate_random_function(f[2], x, y))
+    if f[0] == "pow": #should be in the right range.
+        return abs(evaluate_random_function(f[1], x, y)) ** abs(evaluate_random_function(f[2], x, y)) - 1
+    if f[0] == "x":
+        return x
+    if f[0] == "y":
+        return y
 
 def remap_interval(val,
                    input_interval_start,
@@ -64,8 +136,9 @@ def remap_interval(val,
         >>> remap_interval(5, 4, 6, 1, 2)
         1.5
     """
-    # TODO: implement this
-    pass
+    # multiply value relative to interval by scaling factor, add to output interval start.
+    factor = (output_interval_end - output_interval_start) * 1.0 /(input_interval_end-input_interval_start)
+    return output_interval_start + (val - input_interval_start) * factor
 
 
 def color_map(val):
@@ -116,9 +189,9 @@ def generate_art(filename, x_size=350, y_size=350):
         x_size, y_size: optional args to set image dimensions (default: 350)
     """
     # Functions for red, green, and blue channels - where the magic happens!
-    red_function = ["x"]
-    green_function = ["y"]
-    blue_function = ["x"]
+    red_function = build_random_function(7, 9)
+    green_function = build_random_function(7, 9)
+    blue_function = build_random_function(7, 9)
 
     # Create image and loop over all pixels
     im = Image.new("RGB", (x_size, y_size))
@@ -143,8 +216,8 @@ if __name__ == '__main__':
     # Create some computational art!
     # TODO: Un-comment the generate_art function call after you
     #       implement remap_interval and evaluate_random_function
-    # generate_art("myart.png")
+    generate_art("test1.png")
 
     # Test that PIL is installed correctly
     # TODO: Comment or remove this function call after testing PIL install
-    test_image("noise.png")
+    #test_image("noise.png")
